@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+    <div class="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4 text-center">To-Do App</h1>
+        <!-- Task Input Form -->
+        <form id="task-form" class="flex flex-col space-y-4 mb-6">
+            <input id="task-name" type="text" placeholder="Task Name" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <textarea id="task-desc" placeholder="Task Description" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+            <select id="task-status" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+            <button type="button" onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Add Task</button>
+        </form>
+        <!-- Task List -->
+        <div id="task-list" class="space-y-4"></div>
+    </div>
+
+    <script>
+        const apiUrl = "http://127.0.0.1:5000/task";
+
+        // Fetch and display tasks
+        async function fetchTasks() {
+            const taskList = document.getElementById("task-list");
+            taskList.innerHTML = "<p>Loading...</p>";
+
+            try {
+                const response = await fetch(apiUrl);
+                const tasks = await response.json();
+
+                taskList.innerHTML = tasks.map(task => `
+                    <div class="p-4 bg-gray-50 border rounded-lg shadow-sm flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-semibold">${task.task_name}</h2>
+                            <p class="text-sm text-gray-600">${task.task_description}</p>
+                            <p class="text-sm ${task.task_status === 'Completed' ? 'text-green-500' : 'text-yellow-500'}">${task.task_status}</p>
+                        </div>
+                        <button onclick="deleteTask(${task.id})" class="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600">Delete</button>
+                    </div>
+                `).join("");
+            } catch (error) {
+                taskList.innerHTML = "<p>Error loading tasks. Please try again.</p>";
+            }
+        }
+
+        // Add a new task
+        async function addTask() {
+            const name = document.getElementById("task-name").value;
+            const desc = document.getElementById("task-desc").value;
+            const status = document.getElementById("task-status").value;
+
+            if (!name || !desc || !status) {
+                alert("Please fill out all fields!");
+                return;
+            }
+
+            try {
+                await fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ "task_name": name, "task_description": desc, "task_status": status })
+                });
+                fetchTasks(); // Refresh the task list
+            } catch (error) {
+                alert("Error adding task. Please try again.");
+            }
+        }
+
+        // Delete a task
+        async function deleteTask(taskId) {
+            try {
+                await fetch(`${apiUrl}/${taskId}`, { method: "DELETE" });
+                fetchTasks(); // Refresh the task list
+            } catch (error) {
+                alert("Error deleting task. Please try again.");
+            }
+        }
+
+        // Initialize app
+        fetchTasks();
+    </script>
+</body>
+</html>
